@@ -117,10 +117,7 @@ int main() {
     // use the created program as the frag and vertex shader
     // update only once as shaders are not changing
     myShader.use();
-    float offset = 0.5f;
-    bool goingUp = true;
-    float prevTime = 0.0f, currTime = 0.0f;
-
+    
     while(!glfwWindowShouldClose(window)) {
         // input checking
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -129,17 +126,6 @@ int main() {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        if (offset <= -0.5f) goingUp = true;
-        else if (offset >= 0.5f) goingUp = false;
-        currTime = glfwGetTime(); 
-        if (currTime - prevTime >= 1.0f) {
-            printf("currTime %f \n", currTime);
-            offset = goingUp ? (offset + 0.05) : (offset - 0.05);
-            prevTime = currTime;
-        }
-        myShader.use();
-        myShader.setFloat("xFloat", offset);
         
         // one call restores everything
         glBindVertexArray(VAO);
