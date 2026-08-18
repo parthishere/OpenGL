@@ -117,6 +117,9 @@ int main() {
     // use the created program as the frag and vertex shader
     // update only once as shaders are not changing
     myShader.use();
+    float offset = 0.5f;
+    bool goingUp = true;
+    float prevTime = 0.0f, currTime = 0.0f;
 
     while(!glfwWindowShouldClose(window)) {
         // input checking
@@ -126,15 +129,22 @@ int main() {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        
-        float offset = 0.5f;
+
+        if (offset <= -0.5f) goingUp = true;
+        else if (offset >= 0.5f) goingUp = false;
+        currTime = glfwGetTime(); 
+        if (currTime - prevTime >= 1.0f) {
+            printf("currTime %f \n", currTime);
+            offset = goingUp ? (offset + 0.05) : (offset - 0.05);
+            prevTime = currTime;
+        }
         myShader.use();
         myShader.setFloat("xFloat", offset);
-
+        
         // one call restores everything
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-
+        
         GL_CHECK();
         // errorCheck();
         /**
@@ -147,7 +157,7 @@ int main() {
          * finished we swap the back buffer to the front buffer so the image can be displayed without still being 
          * rendered to, removing all the aforementioned artifacts.
          */
-
+        
         // swap the color buffer (a large 2D buffer that contains color values for each pixel in GLFW's window) 
         // that is used to render to during this render iteration and show it as output to the screen.
         glfwSwapBuffers(window);
