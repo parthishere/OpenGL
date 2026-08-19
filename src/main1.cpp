@@ -80,10 +80,10 @@ int main() {
     // ------------------------------------------------------------------
     float vertices[] = {
         // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   3.0f, 3.0f,   // top right
-        0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   3.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 3.0f    // top left
+        0.1f,  0.1f, 0.0f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.1f, -0.1f, 0.0f,    0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.1f, -0.1f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.1f,  0.1f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
     };
 
     unsigned int indices[] = {  // note that we start from 0!
@@ -137,7 +137,7 @@ int main() {
 
     // load and create a texture 
     // -------------------------
-    unsigned int texture1, texture2;
+    unsigned int texture1;
     // how many textures we want to generate:1
     glGenTextures(1, &texture1);  
     glBindTexture(GL_TEXTURE_2D, texture1); 
@@ -158,41 +158,8 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("./images/wooden_container.png", &width, &height, &nrChannels, 0);
-    if (data) {
-        // attach image to the texture
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-        // generate mipmaps
-        // mipmaps that is basically a collection of texture images where each subsequent texture is twice as small compared to the previous one
-        // after a certain distance threshold from the viewer, OpenGL will use a different mipmap texture that best suits the distance to the object
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else {
-        std::cout << "failed to load texture" << std::endl;
-        return -1;
-    }
-    // we do not need data now
-    stbi_image_free(data);
-
-
-    // generate second texture
-    glGenTextures(1, &texture2);  
-    glBindTexture(GL_TEXTURE_2D, texture2); 
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // which texture pixel to map the texture coordinate to
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // Mipmap filter
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    stbi_set_flip_vertically_on_load(true);  
-    data = stbi_load("./images/hehe.png", &width, &height, &nrChannels, 0);
+    stbi_set_flip_vertically_on_load(1);
+    unsigned char *data = stbi_load("./images/dvd.png", &width, &height, &nrChannels, 0);
     if (data) {
         // attach image to the texture
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -208,15 +175,19 @@ int main() {
     }
     // we do not need data now
     stbi_image_free(data);
+    float x_offset = 0.0f, y_offset = 0.0f;
+    float x_increment = 0.02f, y_increment = 0.01f;
+    float curr_time, prev_frame_time;
+    float min_x = -0.03f, max_x = 0.03f, min_y = -0.03f, max_y = 0.03f;
 
-    
     while(!glfwWindowShouldClose(window)) {
+        // curr_time = glfwGetTime();
         // input checking
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         
         // use the created program as the frag and vertex shader
@@ -224,16 +195,44 @@ int main() {
         myShader.use();
 
         myShader.setInt("texture1", 0);
-        myShader.setInt("texture2", 1);
+        myShader.setFloat("x_offset", x_offset);
+        myShader.setFloat("y_offset", y_offset);
+
+        x_offset += x_increment;
+        y_offset += y_increment;
+    
+        float rand_val = rand();
+        x_increment = min_x + ((float)rand() / (float)RAND_MAX) * (max_x - min_x);
+        y_increment = min_y + ((float)rand() / (float)RAND_MAX) * (max_y - min_y);
+        printf("random value %f %f\n", x_increment, y_increment);
+        
+        if (x_offset >= 0.9f && x_increment > 0) {
+            min_x = -0.03f;
+            max_x = 0.0f;
+        }
+        else if (x_offset <= -0.9f && x_increment < 0){
+            min_x = 0.0f;
+            max_x = 0.03f;
+        }
+
+        if(y_offset >= 0.9f && y_increment > 0) {
+            min_y = -0.03f;
+            max_y = 0.0f;
+        }
+        else if (y_offset <= -0.9f && y_increment < 0){
+            min_y = 0.0f;
+            max_y = 0.03f;
+        }
+        
         // activate the texture unit first before binding texture
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+
         // one call restores everything
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        
+
+        glfwSwapInterval(1);
         // GL_CHECK();
         // errorCheck();
         /**
