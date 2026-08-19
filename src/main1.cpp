@@ -6,6 +6,9 @@
 
 #include "shader.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 
 #define GL_CHECK() do { \
     GLenum e; \
@@ -71,19 +74,29 @@ int main() {
     // load our shader
     Shader myShader("./shader/shader.vs", "./shader/shader.fs");
 
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
     float vertices[] = {
-        // positions         // colors
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
-    };    
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
+    };
+
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };  
 
     unsigned int VAO;
     unsigned int VBO;
+    unsigned int EBO;
 
     // ..:: Initialization code (done once (unless your object frequently changes)) :: ..
     glGenVertexArrays(1, &VAO);  
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     // 2. copy our vertices array in a buffer for OpenGL to use
     // start recording
@@ -95,6 +108,9 @@ int main() {
     // So we should use GL_STATIC_DRAW
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
     // 3. then set our vertex attributes pointers, tell gpu how to parse it
     // set the vertex attributes pointers, this is how we are interpreting the vertex data (sequancial to gpu understandable)
     //     v1   |      v2     |      v3 
@@ -104,19 +120,62 @@ int main() {
     // offset *0
     // also we set location / index to 0 (first paramter) usually 0th element is vertex data and 1st element is color
     // thats why we set location = 0 in vertex shader
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);  
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
-    // Enable location 1
-    glEnableVertexAttribArray(1);  
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1); 
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);  
 
     // stop recording
     glBindVertexArray(0);
 
-    // use the created program as the frag and vertex shader
-    // update only once as shaders are not changing
-    myShader.use();
+
+    // load and create a texture 
+    // -------------------------
+    unsigned int texture;
+    // how many textures we want to generate:1
+    glGenTextures(1, &texture);  
+    glBindTexture(GL_TEXTURE_2D, texture); 
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // If you set it to GL_CLAMP_TO_BORDER
+    // float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+    // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    // which texture pixel to map the texture coordinate to
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Mipmap filter
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("./images/wooden_container.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        // attach image to the texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        // generate mipmaps
+        // mipmaps that is basically a collection of texture images where each subsequent texture is twice as small compared to the previous one
+        // after a certain distance threshold from the viewer, OpenGL will use a different mipmap texture that best suits the distance to the object
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "failed to load texture" << std::endl;
+        return -1;
+    }
+    
+    // we do not need data now
+    stbi_image_free(data);
+
+
+    
     
     while(!glfwWindowShouldClose(window)) {
         // input checking
@@ -127,11 +186,19 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         
+        // use the created program as the frag and vertex shader
+        // update everytime 
+        myShader.use();
+
+        // myShader.setInt("texture1", 1);
+        // activate the texture unit first before binding texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
         // one call restores everything
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
-        GL_CHECK();
+        // GL_CHECK();
         // errorCheck();
         /**
          * Double buffer When an application draws in a single buffer the resulting image may display flickering issues. 
