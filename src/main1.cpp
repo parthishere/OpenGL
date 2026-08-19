@@ -74,6 +74,8 @@ int main() {
     // load our shader
     Shader myShader("./shader/shader.vs", "./shader/shader.fs");
 
+    // OpenGL expects the 0.0 coordinate on the y-axis to be on the bottom side of the image, 
+    // but images usually have 0.0 at the top of the y-axis
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
@@ -135,10 +137,10 @@ int main() {
 
     // load and create a texture 
     // -------------------------
-    unsigned int texture;
+    unsigned int texture1, texture2;
     // how many textures we want to generate:1
-    glGenTextures(1, &texture);  
-    glBindTexture(GL_TEXTURE_2D, texture); 
+    glGenTextures(1, &texture1);  
+    glBindTexture(GL_TEXTURE_2D, texture1); 
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -170,12 +172,43 @@ int main() {
         std::cout << "failed to load texture" << std::endl;
         return -1;
     }
-    
     // we do not need data now
     stbi_image_free(data);
 
 
-    
+    // generate second texture
+    glGenTextures(1, &texture2);  
+    glBindTexture(GL_TEXTURE_2D, texture2); 
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // which texture pixel to map the texture coordinate to
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Mipmap filter
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_set_flip_vertically_on_load(true);  
+    data = stbi_load("./images/hehe.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        // attach image to the texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+        // generate mipmaps
+        // mipmaps that is basically a collection of texture images where each subsequent texture is twice as small compared to the previous one
+        // after a certain distance threshold from the viewer, OpenGL will use a different mipmap texture that best suits the distance to the object
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "failed to load texture" << std::endl;
+        return -1;
+    }
+    // we do not need data now
+    stbi_image_free(data);
+
     
     while(!glfwWindowShouldClose(window)) {
         // input checking
@@ -190,10 +223,13 @@ int main() {
         // update everytime 
         myShader.use();
 
-        // myShader.setInt("texture1", 1);
+        myShader.setInt("texture1", 0);
+        myShader.setInt("texture2", 1);
         // activate the texture unit first before binding texture
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
         // one call restores everything
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
