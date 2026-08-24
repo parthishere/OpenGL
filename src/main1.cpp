@@ -1,5 +1,9 @@
 /* this main uses two attributes in glBufferData vertices for 0th index and color for 1st index*/
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -180,6 +184,7 @@ int main() {
     float curr_time, prev_frame_time;
     float min_x = -0.03f, max_x = 0.03f, min_y = -0.03f, max_y = 0.03f;
 
+
     while(!glfwWindowShouldClose(window)) {
         // curr_time = glfwGetTime();
         // input checking
@@ -189,10 +194,20 @@ int main() {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        
+
+        // This creates identity matrix
+        glm::mat4 trans = glm::mat4(1.0f);
+        // need rotate and scale first inorder to get tranlation vector from it
+        trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+        trans = glm::scale(trans, glm::vec3(1.5, 1.5, 1.5));  
+
         // use the created program as the frag and vertex shader
         // update everytime 
         myShader.use();
+
+        unsigned int transformLoc = glGetUniformLocation(myShader.shaderProgram, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
 
         myShader.setInt("texture1", 0);
         myShader.setFloat("x_offset", x_offset);
@@ -201,27 +216,31 @@ int main() {
         x_offset += x_increment;
         y_offset += y_increment;
     
-        float rand_val = rand();
-        x_increment = min_x + ((float)rand() / (float)RAND_MAX) * (max_x - min_x);
-        y_increment = min_y + ((float)rand() / (float)RAND_MAX) * (max_y - min_y);
-        printf("random value %f %f\n", x_increment, y_increment);
+        // float rand_val = rand();
+        // x_increment = min_x + ((float)rand() / (float)RAND_MAX) * (max_x - min_x);
+        // y_increment = min_y + ((float)rand() / (float)RAND_MAX) * (max_y - min_y);
+        // printf("random value %f %f\n", x_increment, y_increment);
         
         if (x_offset >= 0.9f && x_increment > 0) {
             min_x = -0.03f;
             max_x = 0.0f;
+            x_increment = -0.03;
         }
         else if (x_offset <= -0.9f && x_increment < 0){
             min_x = 0.0f;
             max_x = 0.03f;
+            x_increment = 0.03;
         }
 
         if(y_offset >= 0.9f && y_increment > 0) {
             min_y = -0.03f;
             max_y = 0.0f;
+            y_increment = -0.01;
         }
         else if (y_offset <= -0.9f && y_increment < 0){
             min_y = 0.0f;
             max_y = 0.03f;
+            y_increment = 0.01;
         }
         
         // activate the texture unit first before binding texture
