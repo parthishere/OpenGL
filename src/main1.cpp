@@ -198,8 +198,9 @@ int main() {
         // This creates identity matrix
         glm::mat4 trans = glm::mat4(1.0f);
         // need rotate and scale first inorder to get tranlation vector from it
-        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
-        trans = glm::scale(trans, glm::vec3(1.5, 1.5, 1.5));  
+        trans = glm::translate(trans, glm::vec3(0.5, -0.5, 0.5));  
+        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.5, -0.5, 0.0));
+
 
         // use the created program as the frag and vertex shader
         // update everytime 
@@ -249,6 +250,16 @@ int main() {
 
         // one call restores everything
         glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        // This creates identity matrix
+        trans = glm::mat4(1.0f);
+        // need rotate and scale first inorder to get tranlation vector from it
+        trans = glm::translate(trans, glm::vec3(0.5, 0.5, 0.5));  
+        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.5, 0.5, 0.0));
+        transformLoc = glGetUniformLocation(myShader.shaderProgram, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapInterval(1);
