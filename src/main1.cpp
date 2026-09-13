@@ -163,10 +163,10 @@ int main() {
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(1);
-    unsigned char *data = stbi_load("./images/dvd.png", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("./images/brick.png", &width, &height, &nrChannels, 0);
     if (data) {
         // attach image to the texture
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
         // generate mipmaps
         // mipmaps that is basically a collection of texture images where each subsequent texture is twice as small compared to the previous one
@@ -179,11 +179,6 @@ int main() {
     }
     // we do not need data now
     stbi_image_free(data);
-    float x_offset = 0.0f, y_offset = 0.0f;
-    float x_increment = 0.02f, y_increment = 0.01f;
-    float curr_time, prev_frame_time;
-    float min_x = -0.03f, max_x = 0.03f, min_y = -0.03f, max_y = 0.03f;
-
 
     while(!glfwWindowShouldClose(window)) {
         // curr_time = glfwGetTime();
@@ -195,26 +190,28 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // The first two parameters specify the left and right coordinate of the frustum 
-        // and the third and fourth parameter specify the bottom and top part of the frustum
-        //  5th and 6th parameter then define the distances between the near and far plane
-        glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f)
-        
-        glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
-
         // This creates identity matrix
-        glm::mat4 trans = glm::mat4(1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
         // need rotate and scale first inorder to get tranlation vector from it
-        trans = glm::translate(trans, glm::vec3(0.5, -0.5, 0.5));  
-        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.5, -0.5, 0.0));
-
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0, 1.0, 0.0));
+        
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, glm::vec3(0.0, 0.0, -1.0));
+        
+        glm::mat4 projection;
+        // Its first parameter defines the fov value, it is usually set to 45 degrees - for normal projection
+        projection = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
 
         // use the created program as the frag and vertex shader
         // update everytime 
         myShader.use();
 
-        unsigned int transformLoc = glGetUniformLocation(myShader.shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        unsigned int modelLoc = glGetUniformLocation(myShader.shaderProgram, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        unsigned int viewLoc = glGetUniformLocation(myShader.shaderProgram, "view");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        unsigned int projectionLoc = glGetUniformLocation(myShader.shaderProgram, "projection");
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         // activate the texture unit first before binding texture
         glActiveTexture(GL_TEXTURE0);
@@ -225,7 +222,7 @@ int main() {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapInterval(1);
-        // GL_CHECK();
+        GL_CHECK();
         // errorCheck();
         /**
          * Double buffer When an application draws in a single buffer the resulting image may display flickering issues. 
