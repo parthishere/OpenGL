@@ -195,6 +195,13 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // The first two parameters specify the left and right coordinate of the frustum 
+        // and the third and fourth parameter specify the bottom and top part of the frustum
+        //  5th and 6th parameter then define the distances between the near and far plane
+        glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f)
+        
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
+
         // This creates identity matrix
         glm::mat4 trans = glm::mat4(1.0f);
         // need rotate and scale first inorder to get tranlation vector from it
@@ -209,57 +216,12 @@ int main() {
         unsigned int transformLoc = glGetUniformLocation(myShader.shaderProgram, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
-
-        myShader.setInt("texture1", 0);
-        myShader.setFloat("x_offset", x_offset);
-        myShader.setFloat("y_offset", y_offset);
-
-        x_offset += x_increment;
-        y_offset += y_increment;
-    
-        // float rand_val = rand();
-        // x_increment = min_x + ((float)rand() / (float)RAND_MAX) * (max_x - min_x);
-        // y_increment = min_y + ((float)rand() / (float)RAND_MAX) * (max_y - min_y);
-        // printf("random value %f %f\n", x_increment, y_increment);
-        
-        if (x_offset >= 0.9f && x_increment > 0) {
-            min_x = -0.03f;
-            max_x = 0.0f;
-            x_increment = -0.03;
-        }
-        else if (x_offset <= -0.9f && x_increment < 0){
-            min_x = 0.0f;
-            max_x = 0.03f;
-            x_increment = 0.03;
-        }
-
-        if(y_offset >= 0.9f && y_increment > 0) {
-            min_y = -0.03f;
-            max_y = 0.0f;
-            y_increment = -0.01;
-        }
-        else if (y_offset <= -0.9f && y_increment < 0){
-            min_y = 0.0f;
-            max_y = 0.03f;
-            y_increment = 0.01;
-        }
-        
         // activate the texture unit first before binding texture
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
 
         // one call restores everything
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        // This creates identity matrix
-        trans = glm::mat4(1.0f);
-        // need rotate and scale first inorder to get tranlation vector from it
-        trans = glm::translate(trans, glm::vec3(0.5, 0.5, 0.5));  
-        trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.5, 0.5, 0.0));
-        transformLoc = glGetUniformLocation(myShader.shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapInterval(1);
