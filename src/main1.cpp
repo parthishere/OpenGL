@@ -180,6 +180,17 @@ int main() {
     // we do not need data now
     stbi_image_free(data);
 
+    // glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f); 
+    // glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+    // glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget); 
+    // glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f); 
+    // glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
+    // glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+    // glm::mat4 view;
+    // view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), 
+    //         glm::vec3(0.0f, 0.0f, 0.0f), 
+    //         glm::vec3(0.0f, 1.0f, 0.0f));
+
     while(!glfwWindowShouldClose(window)) {
         // curr_time = glfwGetTime();
         // input checking
@@ -193,10 +204,15 @@ int main() {
         // This creates identity matrix
         glm::mat4 model = glm::mat4(1.0f);
         // need rotate and scale first inorder to get tranlation vector from it
-        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0, 1.0, 0.0));
+        model = glm::rotate(model, glm::radians(50.0f), glm::vec3(1.0, 1.0, 0.0));
         
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0, 0.0, -1.0));
+        // glm::mat4 view = glm::mat4(1.0f);
+        const float radius = 1.0f;
+        float camX = sin(glfwGetTime()) * radius;
+        float camZ = cos(glfwGetTime()) * radius;
+        glm::mat4 view;
+        view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));  
+        // view = glm::translate(view, glm::vec3(0.0, 0.0, -1.0));
         
         glm::mat4 projection;
         // Its first parameter defines the fov value, it is usually set to 45 degrees - for normal projection
@@ -241,6 +257,10 @@ int main() {
         // checks if any events are triggered (like keyboard input or mouse movement events), 
         // updates the window state, and calls the corresponding functions (which we can register via callback methods).
         glfwPollEvents();
+
+        glEnable(GL_DEPTH_TEST); 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     }
 
 
